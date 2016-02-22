@@ -1,5 +1,15 @@
 #include "Application.h"
 
+void gameLoopDelay(DWORD frameStartTime, float frameInterval)
+{
+	DWORD frameProcessingTime = GetTickCount() - frameStartTime;
+
+	if (frameProcessingTime < frameInterval)
+	{
+		Sleep(frameInterval - frameProcessingTime);
+	}
+}
+
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
@@ -15,8 +25,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
     // Main message loop
     MSG msg = {0};
 
+	float frameInterval = 16.67f;
+
     while (WM_QUIT != msg.message)
     {
+		DWORD frameStartTime = GetTickCount();
+
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
 			bool handled = false;
@@ -34,11 +48,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				DispatchMessage(&msg);
 			}
         }
-        else
-        {
-			theApp->Update();
-            theApp->Draw();
-        }
+		else
+		{
+			theApp->Update(frameInterval / 100.0f);
+			theApp->Draw();
+
+			gameLoopDelay(frameStartTime, frameInterval);
+		}
     }
 
 	delete theApp;

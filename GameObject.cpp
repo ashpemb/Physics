@@ -1,39 +1,21 @@
 #include "GameObject.h"
 
-GameObject::GameObject(string type, Geometry geometry, Material material) : _geometry(geometry), _type(type), _material(material)
+GameObject::GameObject(string type, Appearance * appearance, Transform * transform, ParticleModel * particleModel) : _appearance(appearance), _type(type), _transform(transform), _particleModel(particleModel)
 {
-	_parent = nullptr;
 
-
-	_textureRV = nullptr;
 }
 
 GameObject::~GameObject()
 {
 }
 
-void GameObject::Update(float t)
+void GameObject::Update(float deltaTime)
 {
-	// Calculate world matrix
-	XMMATRIX scale = XMMatrixScaling(_scale.x, _scale.y, _scale.z);
-	XMMATRIX rotation = XMMatrixRotationX(_rotation.x) * XMMatrixRotationY(_rotation.y) * XMMatrixRotationZ(_rotation.z);
-	XMMATRIX translation = XMMatrixTranslation(_position.x, _position.y, _position.z);
-
-	XMStoreFloat4x4(&_world, scale * rotation * translation);
-
-	if (_parent != nullptr)
-	{
-		XMStoreFloat4x4(&_world, this->GetWorldMatrix() * _parent->GetWorldMatrix());
-	}
+	_particleModel->Update(deltaTime);
+	_transform->Update(deltaTime);
 }
 
 void GameObject::Draw(ID3D11DeviceContext * pImmediateContext)
 {
-	// NOTE: We are assuming that the constant buffers and all other draw setup has already taken place
-
-	// Set vertex and index buffers
-	pImmediateContext->IASetVertexBuffers(0, 1, &_geometry.vertexBuffer, &_geometry.vertexBufferStride, &_geometry.vertexBufferOffset);
-	pImmediateContext->IASetIndexBuffer(_geometry.indexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-	pImmediateContext->DrawIndexed(_geometry.numberOfIndices, 0, 0);
+	_appearance->Draw(pImmediateContext);
 }

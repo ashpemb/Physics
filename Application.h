@@ -8,31 +8,20 @@
 #include "DDSTextureLoader.h"
 #include "resource.h"
 #include "Camera.h"
+#include "OBJLoader.h"
 
 #include <vector>
-/*
-//#include <SpriteFont.h>
-#include "CommonStates.h"
-//#include "DDSTextureLoader.h"
-#include "Effects.h"
-#include "GeometricPrimitive.h"
-#include "Model.h"
-#include "PrimitiveBatch.h"
-#include "ScreenGrab.h"
-#include "SpriteBatch.h"
-#include "SpriteFont.h"
-#include "VertexTypes.h"
-*/
+
 #include "GameObject.h"
 
 using namespace DirectX;
 
-struct SimpleVertex
-{
-    XMFLOAT3 PosL;
-	XMFLOAT3 NormL;
-	XMFLOAT2 Tex;
-};
+//struct SimpleVertex
+//{
+//    XMFLOAT3 PosL;
+//	XMFLOAT3 NormL;
+//	XMFLOAT2 Tex;
+//};
 
 struct SurfaceInfo
 {
@@ -101,6 +90,8 @@ private:
 
 	vector<GameObject *> _gameObjects;
 
+	MeshData objMeshData;
+
 	Camera * _camera;
 	float _cameraOrbitRadius = 7.0f;
 	float _cameraOrbitRadiusMin = 2.0f;
@@ -130,8 +121,6 @@ private:
 	HRESULT InitVertexBuffer();
 	HRESULT InitIndexBuffer();
 
-	void moveForward(int objectNumber);
-
 public:
 	Application();
 	~Application();
@@ -140,7 +129,7 @@ public:
 
 	bool HandleKeyboard(MSG msg);
 
-	void Update();
+	void Update(float deltaTime);
 	void Draw();
 };
 

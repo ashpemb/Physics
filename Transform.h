@@ -1,15 +1,16 @@
 #pragma once
 
 #include <directxmath.h>
-#include <d3d11_1.h>
-#include <string>
 
 using namespace DirectX;
-using namespace std;
 
 class Transform
 {
 public:
+	Transform();
+	~Transform();
+
+	// Setters and Getters for position/rotation/scale
 	void SetPosition(XMFLOAT3 position) { _position = position; }
 	void SetPosition(float x, float y, float z) { _position.x = x; _position.y = y; _position.z = z; }
 
@@ -24,14 +25,20 @@ public:
 	void SetRotation(float x, float y, float z) { _rotation.x = x; _rotation.y = y; _rotation.z = z; }
 
 	XMFLOAT3 GetRotation() const { return _rotation; }
-	Transform();
-	~Transform();
 
-	void Update();
+	XMMATRIX GetWorldMatrix() const { return XMLoadFloat4x4(&_world); }
+
+	void SetParent(Transform * parent) { _parent = parent; }
+
+	void Update(float t);
 
 private:
 	XMFLOAT3 _position;
 	XMFLOAT3 _rotation;
 	XMFLOAT3 _scale;
+
+	XMFLOAT4X4 _world;
+
+	Transform * _parent;
 };
 

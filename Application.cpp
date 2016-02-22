@@ -101,6 +101,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\stone.dds", nullptr, &_pTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\floor.dds", nullptr, &_pGroundTextureRV);
 
+	objMeshData = OBJLoader::Load("sphere.obj", _pd3dDevice);
+
     // Setup Camera
 	XMFLOAT3 eye = XMFLOAT3(0.0f, 2.0f, -1.0f);
 	XMFLOAT3 at = XMFLOAT3(0.0f, 2.0f, 0.0f);
@@ -129,6 +131,13 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	planeGeometry.vertexBufferOffset = 0;
 	planeGeometry.vertexBufferStride = sizeof(SimpleVertex);
 
+	Geometry sphereGeometry;
+	sphereGeometry.indexBuffer = objMeshData.IndexBuffer;
+	sphereGeometry.vertexBuffer = objMeshData.VertexBuffer;
+	sphereGeometry.numberOfIndices = objMeshData.IndexCount;
+	sphereGeometry.vertexBufferOffset = objMeshData.VBOffset;
+	sphereGeometry.vertexBufferStride = objMeshData.VBStride;
+
 	Material shinyMaterial;
 	shinyMaterial.ambient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
 	shinyMaterial.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -140,24 +149,52 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	noSpecMaterial.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	noSpecMaterial.specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	noSpecMaterial.specularPower = 0.0f;
+
+	Appearance * floorAppearance = new Appearance(planeGeometry, noSpecMaterial);
+	floorAppearance->SetTextureRV(_pGroundTextureRV);
+
+	Appearance * crateAppearance = new Appearance(cubeGeometry, shinyMaterial);
+	crateAppearance->SetTextureRV(_pTextureRV);
+
+	Appearance * sphereAppearance = new Appearance(sphereGeometry, shinyMaterial);
+	sphereAppearance->SetTextureRV(_pTextureRV);
 	
-	GameObject * gameObject = new GameObject("Floor", planeGeometry, noSpecMaterial);
-	gameObject->SetPosition(0.0f, 0.0f, 0.0f);
-	gameObject->SetScale(15.0f, 15.0f, 15.0f);
-	gameObject->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
-	gameObject->SetTextureRV(_pGroundTextureRV);
+	Transform * floorTransform = new Transform();
+	floorTransform->SetPosition(0.0f, 0.0f, 0.0f);
+	floorTransform->SetScale(15.0f, 15.0f, 15.0f);
+	floorTransform->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+
+	Transform * sphereTransform = new Transform();
+	sphereTransform->SetPosition(0.0f, 1.0f, 0.0f);
+
+	ParticleModel * particleModel = new ParticleModel(floorTransform, false, XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 0.0f));
+
+	GameObject * gameObject = new GameObject("Floor", floorAppearance, floorTransform, particleModel);
 
 	_gameObjects.push_back(gameObject);
 
 	for (auto i = 0; i < 5; i++)
 	{
-		gameObject = new GameObject("Cube " + i, cubeGeometry, shinyMaterial);
-		gameObject->SetScale(0.5f, 0.5f, 0.5f);
-		gameObject->SetPosition(-4.0f + (i * 2.0f), 0.5f, 10.0f);
-		gameObject->SetTextureRV(_pTextureRV);
+		Transform * cubeTransform = new Transform();
+		cubeTransform->SetScale(0.5f, 0.5f, 0.5f);
+		cubeTransform->SetPosition(-4.0f + (i * 2.0f), 0.5f, 10.0f);
+
+		ParticleModel * particleModel = new ParticleModel(cubeTransform, true, XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 0.0f));
+
+		gameObject = new GameObject("Cube " + i, crateAppearance, cubeTransform, particleModel);
 
 		_gameObjects.push_back(gameObject);
 	}
+
+	ParticleModel * particleModel2 = new ParticleModel(sphereTransform, false, XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 0.0f));
+	gameObject = new GameObject("Sphere", sphereAppearance, sphereTransform, particleModel2);
+	_gameObjects.push_back(gameObject);
+
+	// Setup specific cube behaviour
+	_gameObjects[3]->GetParticleModel()->SetUsingConstAccel(false);
+	_gameObjects[3]->GetParticleModel()->SetVelocity(0.0f, 0.1f, 0.0f);
+
+	_gameObjects[4]->GetParticleModel()->SetAcceleration(0.0f, 0.1f, 0.0f);
 
 	return S_OK;
 }
@@ -646,15 +683,8 @@ void Application::Cleanup()
 	}
 }
 
-void Application::moveForward(int objectNumber)
-{
-	XMFLOAT3 position = _gameObjects[objectNumber]->GetPosition();
-	position.z -= 0.1f;
-	_gameObjects[objectNumber]->SetPosition(position);
-}
-
-void Application::Update()
-{
+void Application::Update(float deltaTime)
+{/*
     // Update our time
     static float timeSinceStart = 0.0f;
     static DWORD dwTimeStart = 0;
@@ -665,11 +695,16 @@ void Application::Update()
         dwTimeStart = dwTimeCur;
 
 	timeSinceStart = (dwTimeCur - dwTimeStart) / 1000.0f;
-
+	*/
 	// Move gameobject
 	if (GetAsyncKeyState('1'))
 	{
-		moveForward(1);
+		_gameObjects[1]->GetParticleModel()->move(0.0f, 0.0f, -0.1f);
+	}
+
+	if (GetAsyncKeyState('2'))
+	{
+		_gameObjects[2]->GetParticleModel()->move(0.0f, 0.0f, 0.1f);
 	}
 
 	// Update camera
@@ -688,10 +723,8 @@ void Application::Update()
 	// Update objects
 	for (auto gameObject : _gameObjects)
 	{
-		gameObject->Update(timeSinceStart);
+		gameObject->Update(deltaTime);
 	}
-
-	Sleep(20);
 }
 
 void Application::Draw()
@@ -735,7 +768,8 @@ void Application::Draw()
 	for (auto gameObject : _gameObjects)
 	{
 		// Get render material
-		Material material = gameObject->GetMaterial();
+		Appearance * appearance = gameObject->GetAppearance();
+		Material material = appearance->GetMaterial();
 
 		// Copy material to shader
 		cb.surface.AmbientMtrl = material.ambient;
@@ -743,12 +777,12 @@ void Application::Draw()
 		cb.surface.SpecularMtrl = material.specular;
 
 		// Set world matrix
-		cb.World = XMMatrixTranspose(gameObject->GetWorldMatrix());
+		cb.World = XMMatrixTranspose(gameObject->GetTransform()->GetWorldMatrix());
 
 		// Set texture
-		if (gameObject->HasTexture())
+		if (appearance->HasTexture())
 		{
-			ID3D11ShaderResourceView * textureRV = gameObject->GetTextureRV();
+			ID3D11ShaderResourceView * textureRV = appearance->GetTextureRV();
 			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
 			cb.HasTexture = 1.0f;
 		}
